@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Real-Time India Health Map</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz@14..32&display=swap" rel="stylesheet" />
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', system-ui, sans-serif; }
+        body {
+            min-height: 100vh;
+            background: #0a0a12;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            overflow-x: hidden;
+        }
+        .app-container {
+            max-width: 1000px;
+            width: 100%;
+            background: rgba(10, 15, 30, 0.85);
+            backdrop-filter: blur(20px);
+            border-radius: 48px;
+            padding: 26px 22px 30px;
+            box-shadow: 0 30px 45px -15px rgba(0,0,0,0.7), 0 0 0 1px rgba(100, 200, 255, 0.08);
+            border: 1px solid rgba(100, 200, 255, 0.08);
+            color: #f5efe6;
+        }
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .header h1 {
+            font-size: 1.8rem;
+            font-weight: 600;
+            background: linear-gradient(145deg, #fff3e0, #fdd9b5);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .header .badge {
+            background: rgba(0, 30, 20, 0.5);
+            padding: 6px 18px;
+            border-radius: 100px;
+            border: 1px solid #f8d5a3;
+            font-weight: 500;
+            font-size: 0.9rem;
+            color: #feeedb;
+        }
+        .location-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+            margin-bottom: 16px;
+        }
+        .location-card {
+            flex: 1;
+            min-width: 200px;
+            background: rgba(20, 30, 28, 0.6);
+            backdrop-filter: blur(8px);
+            border-radius: 60px;
+            padding: 10px 18px 10px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+            border: 1px solid rgba(255, 215, 150, 0.25);
+        }
+        .loc-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.95rem;
+        }
+        .loc-left .icon { font-size: 1.6rem; }
+        .loc-btn {
+            background: #d9b38230;
+            border: 1px solid #ebc9a0;
+            color: #f3e2cf;
+            padding: 6px 18px;
+            border-radius: 60px;
+            font-weight: 500;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .loc-btn:hover { background: #ebc9a050; }
+        .map-container {
+            width: 100%;
+            height: 500px;
+            border-radius: 24px;
+            overflow: hidden;
+            border: 2px solid rgba(255, 215, 150, 0.3);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+            background: #1a2a2a;
+            position: relative;
+        }
+        .map-container iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            filter: brightness(0.9) saturate(1.1);
+        }
+        .map-label {
+            position: absolute;
+            bottom: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(4px);
+            padding: 6px 20px;
+            border-radius: 40px;
+            font-size: 0.75rem;
+            color: #f5efe6;
+            border: 1px solid rgba(255,215,150,0.2);
+            pointer-events: none;
+        }
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 14px;
+        }
+        .controls button {
+            background: rgba(20, 30, 28, 0.6);
+            border: 1px solid rgba(255, 215, 150, 0.2);
+            color: #f5efe6;
+            padding: 8px 20px;
+            border-radius: 40px;
+            font-weight: 500;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .controls button:hover {
+            background: rgba(248, 213, 163, 0.15);
+            border-color: #f8d5a3;
+        }
+        .controls .status {
+            font-size: 0.8rem;
+            opacity: 0.6;
+            padding: 8px 12px;
+            align-self: center;
+        }
+        .footer {
+            margin-top: 16px;
+            font-size: 0.7rem;
+            opacity: 0.5;
+            text-align: center;
+            border-top: 1px solid rgba(255,215,150,0.08);
+            padding-top: 14px;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 8px 20px;
+        }
+        @media (max-width: 600px) {
+            .app-container { padding: 16px; }
+            .map-container { height: 350px; }
+            .header h1 { font-size: 1.3rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <div class="header">
+        <h1>📍 India Health Map</h1>
+        <span class="badge">🇮🇳 Real-Time · Google Maps</span>
+    </div>
+
+    <div class="location-bar">
+        <div class="location-card">
+            <div class="loc-left">
+                <span class="icon">📍</span>
+                <span id="locationDisplay">India · detecting...</span>
+            </div>
+            <button class="loc-btn" id="locateBtn">
+                <span>📍</span> Find Me
+            </button>
+        </div>
+    </div>
+
+    <div class="map-container" id="mapContainer">
+        <iframe id="mapIframe" 
+            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3500.000!2d77.2090!3d28.6139!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x390cfd5b347eb62d%3A0x52c2b7494e204dce!2sNew%20Delhi%2C%20India!5e0!3m2!1sen!2sin!4v1700000000000" 
+            allowfullscreen loading="lazy">
+        </iframe>
+        <div class="map-label">📍 India</div>
+    </div>
+
+    <div class="controls">
+        <button id="searchHospitals"><span>🏥</span> Hospitals</button>
+        <button id="searchClinics"><span>🏪</span> Clinics</button>
+        <button id="searchPharmacies"><span>💊</span> Pharmacies</button>
+        <button id="searchDental"><span>🦷</span> Dental</button>
+        <button id="searchEmergency"><span>🚨</span> Emergency</button>
+        <span class="status" id="mapStatus">✅ Map Ready</span>
+    </div>
+
+    <div class="footer">
+        <span>🗺️ Google Maps · India</span>
+        <span>📍 Click buttons to search nearby</span>
+        <span>🚑 Emergency: Call 108</span>
+    </div>
+</div>
+
+<script>
+// ============================================================
+// WORKING GOOGLE MAPS - INDIA HEALTH MAP
+// ============================================================
+
+// DOM Elements
+const mapIframe = document.getElementById('mapIframe');
+const locationDisplay = document.getElementById('locationDisplay');
+const mapStatus = document.getElementById('mapStatus');
+const locateBtn = document.getElementById('locateBtn');
+
+// Default location (India)
+let userLat = 28.6139;
+let userLng = 77.2090;
+let userCity = 'New Delhi, India';
+
+// ============================================================
+// UPDATE MAP WITH NEW LOCATION
+// ============================================================
+function updateMap(lat, lng, place = 'India') {
+    userLat = lat;
+    userLng = lng;
+    userCity = place;
+    
+    // Update display
+    locationDisplay.innerHTML = `📍 ${place} · ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+    mapStatus.innerHTML = '✅ Location updated';
+    
+    // Update iframe src with new coordinates
+    mapIframe.src = `https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3500.000!2d${lng}!3d${lat}!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2z${lat}%2C${lng}!5e0!3m2!1sen!2sin!4v1700000000000`;
+    
+    // Update map label
+    const label = document.querySelector('.map-label');
+    label.textContent = `📍 ${place}`;
+}
+
+// ============================================================
+// SEARCH NEARBY ON GOOGLE MAPS
+// ============================================================
+function searchNearby(query, type = '') {
+    const searchQuery = encodeURIComponent(query);
+    const url = `https://www.google.com/maps/search/${searchQuery}/@${userLat},${userLng},15z`;
+    window.open(url, '_blank');
+    mapStatus.innerHTML = `🔍 Searching: ${query}`;
+}
+
+// ============================================================
+// LOCATE USER
+// ============================================================
+function locateUser() {
+    mapStatus.innerHTML = '📍 Locating...';
+    
+    if (!navigator.geolocation) {
+        mapStatus.innerHTML = '⚠️ Location not available';
+        updateMap(28.6139, 77.2090, 'New Delhi, India');
+        return;
+    }
+    
+    navigator.geolocation.getCurrentPosition(
+        (pos) => {
+            const lat = pos.coords.latitude;
+            const lng = pos.coords.longitude;
+            
+            // Check if in India
+            if (lat >= 8.0 && lat <= 37.0 && lng >= 68.0 && lng <= 97.0) {
+                // Try to get city name using reverse geocoding
+                fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=10`)
+                    .then(res => res.json())
+                    .then(data => {
+                        const city = data.address?.city || data.address?.town || data.address?.village || 'India';
+                        updateMap(lat, lng, `${city}, India`);
+                        mapStatus.innerHTML = '✅ Location found';
+                    })
+                    .catch(() => {
+                        updateMap(lat, lng, 'India');
+                        mapStatus.innerHTML = '✅ Location found';
+                    });
+            } else {
+                updateMap(28.6139, 77.2090, 'New Delhi, India');
+                mapStatus.innerHTML = '⚠️ Location outside India, showing Delhi';
+            }
+        },
+        (error) => {
+            mapStatus.innerHTML = '⚠️ Location denied, showing Delhi';
+            updateMap(28.6139, 77.2090, 'New Delhi, India');
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+    );
+}
+
+// ============================================================
+// EVENT LISTENERS
+// ============================================================
+
+// Find Me button
+locateBtn.addEventListener('click', locateUser);
+
+// Search buttons
+document.getElementById('searchHospitals').addEventListener('click', () => {
+    searchNearby('hospitals near me');
+});
+
+document.getElementById('searchClinics').addEventListener('click', () => {
+    searchNearby('clinics near me');
+});
+
+document.getElementById('searchPharmacies').addEventListener('click', () => {
+    searchNearby('pharmacies near me');
+});
+
+document.getElementById('searchDental').addEventListener('click', () => {
+    searchNearby('dental clinics near me');
+});
+
+document.getElementById('searchEmergency').addEventListener('click', () => {
+    // Emergency - show nearest hospitals and call 108
+    if (confirm('🚨 Emergency: Click OK to find nearest hospitals and call 108.')) {
+        window.open(`https://www.google.com/maps/search/emergency+hospital/@${userLat},${userLng},14z`, '_blank');
+        alert('📞 Please call 108 for ambulance immediately.');
+    }
+});
+
+// ============================================================
+// AUTO-LOCATE ON LOAD
+// ============================================================
+setTimeout(locateUser, 1000);
+
+// ============================================================
+// KEYBOARD SHORTCUTS
+// ============================================================
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'h' || e.key === 'H') {
+        document.getElementById('searchHospitals').click();
+    } else if (e.key === 'c' || e.key === 'C') {
+        document.getElementById('searchClinics').click();
+    } else if (e.key === 'p' || e.key === 'P') {
+        document.getElementById('searchPharmacies').click();
+    } else if (e.key === 'd' || e.key === 'D') {
+        document.getElementById('searchDental').click();
+    } else if (e.key === 'e' || e.key === 'E') {
+        document.getElementById('searchEmergency').click();
+    } else if (e.key === 'l' || e.key === 'L') {
+        locateUser();
+    }
+});
+
+console.log('🗺️ India Health Map loaded');
+console.log(`📍 Default: ${userCity} (${userLat}, ${userLng})`);
+console.log('⌨️ Shortcuts: H=Hospitals, C=Clinics, P=Pharmacies, D=Dental, E=Emergency, L=Locate');
+</script>
+
+</body>
+</html>
